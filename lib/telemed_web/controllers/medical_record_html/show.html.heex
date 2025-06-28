@@ -1,0 +1,17 @@
+<.header>
+  Medical record {@medical_record.id}
+  <:subtitle>This is a medical_record record from your database.</:subtitle>
+  <:actions>
+    <.link href={~p"/medical_records/#{@medical_record}/edit"}>
+      <.button>Edit medical_record</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Nom">{@medical_record.nom}</:item>
+  <:item title="Age">{@medical_record.age}</:item>
+  <:item title="Description">{@medical_record.description}</:item>
+</.list>
+
+<.back navigate={~p"/medical_records"}>Back to medical_records</.back>

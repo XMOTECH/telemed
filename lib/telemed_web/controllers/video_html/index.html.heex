@@ -1,0 +1,541 @@
+<!-- Create this file at: lib/telemed_web/controllers/video_html/index.html.heex -->
+
+<div class="video-consultation">
+  <h2>Consultation vidéo prototype</h2>
+  
+  <div class="video-container">
+    <div class="video-wrapper">
+      <video id="localVideo" autoplay playsinline muted></video>
+      <p>Vidéo locale (Moi)</p>
+    </div>
+    <div class="video-wrapper">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <p>Vidéo distante (Autre participant)</p>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <button id="joinRoom" type="button">Rejoindre la salle</button>
+    <button id="startCall" type="button" disabled>Démarrer l'appel</button>
+    <button id="stopCall" type="button" style="display:none;">Arrêter l'appel</button>
+    <button id="leaveRoom" type="button" style="display:none;">Quitter la salle</button>
+  </div>
+  
+  <div id="status" class="status">Prêt à rejoindre la salle de consultation</div>
+  <div id="debug" class="debug"></div>
+  
+  <!-- Solution alternative pour IP -->
+  <div id="ipWarning" class="warning" style="display:none;">
+    <h3>⚠️ WebRTC bloqué via IP HTTP</h3>
+    <p>Les navigateurs modernes bloquent WebRTC sur HTTP via IP pour des raisons de sécurité.</p>
+    <div class="solutions">
+      <h4>Solutions :</h4>
+      <ul>
+        <li><strong>Test local :</strong> Utilisez <code>localhost:4001/video</code> sur la même machine</li>
+        <li><strong>Test réseau :</strong> Utilisez <code>localhost:4001/video</code> sur chaque machine</li>
+        <li><strong>Alternative :</strong> Configurez un tunnel local avec ngrok</li>
+      </ul>
+      <button id="testLocal" class="btn-secondary">Tester en local</button>
+      <button id="setupTunnel" class="btn-secondary">Configurer tunnel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Fonction temporaire pour debug avant déclaration complète
+function tempDebug(message) {
+  const debug = document.getElementById("debug");
+  if (debug) {
+    debug.innerHTML += "<br>" + message;
+  }
+  console.log(message);
+}
+
+// Polyfill amélioré pour navigator.mediaDevices (support navigateurs plus anciens)
+if (navigator.mediaDevices === undefined) {
+  navigator.mediaDevices = {};
+  tempDebug("Polyfill mediaDevices ajouté");
+}
+
+if (navigator.mediaDevices.getUserMedia === undefined) {
+  navigator.mediaDevices.getUserMedia = function(constraints) {
+    // Debug des APIs disponibles
+    tempDebug("Recherche d'APIs getUserMedia...");
+    tempDebug("navigator.getUserMedia: " + (navigator.getUserMedia ? "disponible" : "non disponible"));
+    tempDebug("navigator.webkitGetUserMedia: " + (navigator.webkitGetUserMedia ? "disponible" : "non disponible"));
+    tempDebug("navigator.mozGetUserMedia: " + (navigator.mozGetUserMedia ? "disponible" : "non disponible"));
+    tempDebug("navigator.msGetUserMedia: " + (navigator.msGetUserMedia ? "disponible" : "non disponible"));
+    
+    // Essayer toutes les variantes de getUserMedia
+    const getUserMedia = navigator.getUserMedia || 
+                        navigator.webkitGetUserMedia || 
+                        navigator.mozGetUserMedia || 
+                        navigator.msGetUserMedia ||
+                        navigator.oGetUserMedia;
+    
+    if (!getUserMedia) {
+      tempDebug("Aucune variante de getUserMedia trouvée");
+      tempDebug("Navigateur: " + navigator.userAgent);
+      tempDebug("URL: " + window.location.href);
+      tempDebug("Protocole: " + window.location.protocol);
+      
+      // Afficher l'avertissement IP
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        tempDebug("⚠️ WebRTC via IP HTTP peut être bloqué par le navigateur");
+        tempDebug("💡 Solution: Utilisez localhost:4001 ou configurez HTTPS");
+        document.getElementById('ipWarning').style.display = 'block';
+      }
+      
+      return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+    }
+    
+    tempDebug("Utilisation de getUserMedia polyfill: " + (getUserMedia.name || "fonction anonyme"));
+    
+    return new Promise(function(resolve, reject) {
+      getUserMedia.call(navigator, constraints, resolve, reject);
+    });
+  };
+  tempDebug("Polyfill getUserMedia ajouté");
+}
+
+let localVideo = document.getElementById("localVideo");
+let remoteVideo = document.getElementById("remoteVideo");
+let joinRoom = document.getElementById("joinRoom");
+let startCall = document.getElementById("startCall");
+let stopCall = document.getElementById("stopCall");
+let leaveRoom = document.getElementById("leaveRoom");
+let status = document.getElementById("status");
+let debug = document.getElementById("debug");
+let testLocal = document.getElementById("testLocal");
+let setupTunnel = document.getElementById("setupTunnel");
+
+let localStream = null;
+let peerConnection = null;
+let channel = null;
+let isInitiator = false;
+
+const configuration = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+};
+
+function updateStatus(message) {
+  status.textContent = message;
+  console.log(message);
+}
+
+function updateDebug(message) {
+  debug.innerHTML += "<br>" + message;
+}
+
+// Vérifier la compatibilité WebRTC
+function checkWebRTCSupport() {
+  updateDebug("Vérification de la compatibilité WebRTC...");
+  updateDebug("Navigateur: " + navigator.userAgent);
+  updateDebug("URL: " + window.location.href);
+  updateDebug("Protocole: " + window.location.protocol);
+  
+  if (!navigator.mediaDevices) {
+    updateStatus("Erreur: WebRTC n'est pas supporté par ce navigateur");
+    updateDebug("navigator.mediaDevices n'est pas disponible");
+    return false;
+  }
+  
+  if (!navigator.mediaDevices.getUserMedia) {
+    updateStatus("Erreur: getUserMedia n'est pas supporté");
+    updateDebug("getUserMedia n'est pas disponible");
+    return false;
+  }
+  
+  // Vérifier RTCPeerConnection
+  if (!window.RTCPeerConnection && !window.webkitRTCPeerConnection && !window.mozRTCPeerConnection) {
+    updateStatus("Erreur: RTCPeerConnection n'est pas supporté");
+    updateDebug("RTCPeerConnection n'est pas disponible");
+    return false;
+  }
+  
+  // Vérifier si on est en HTTPS (requis pour certains navigateurs)
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    updateDebug("⚠️ ATTENTION: WebRTC peut nécessiter HTTPS sur certains navigateurs");
+    updateDebug("Essayez d'accéder via localhost:4001 au lieu de l'IP");
+    document.getElementById('ipWarning').style.display = 'block';
+  }
+  
+  updateDebug("WebRTC est supporté");
+  updateDebug("mediaDevices: " + (navigator.mediaDevices ? "OK" : "NOK"));
+  updateDebug("getUserMedia: " + (navigator.mediaDevices.getUserMedia ? "OK" : "NOK"));
+  updateDebug("RTCPeerConnection: " + (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection ? "OK" : "NOK"));
+  return true;
+}
+
+// Initialiser la vérification au chargement
+document.addEventListener('DOMContentLoaded', function() {
+  updateDebug("Page chargée, vérification WebRTC...");
+  checkWebRTCSupport();
+});
+
+// Gestionnaires pour les solutions alternatives
+testLocal.onclick = () => {
+  window.location.href = 'http://localhost:4001/video';
+};
+
+setupTunnel.onclick = () => {
+  updateDebug("Configuration du tunnel ngrok...");
+  updateDebug("1. Téléchargez ngrok depuis https://ngrok.com/");
+  updateDebug("2. Installez ngrok");
+  updateDebug("3. Exécutez: ngrok http 4001");
+  updateDebug("4. Utilisez l'URL HTTPS fournie par ngrok");
+  
+  // Ouvrir une nouvelle fenêtre avec les instructions
+  window.open('https://ngrok.com/download', '_blank');
+};
+
+joinRoom.onclick = () => {
+  if (typeof Phoenix === 'undefined') {
+    updateStatus("Erreur: Phoenix n'est pas défini");
+    updateDebug("Phoenix n'est pas disponible globalement");
+    return;
+  }
+  
+  updateDebug("Connexion au socket Phoenix...");
+  const socket = new Phoenix.Socket("/socket", {});
+  socket.connect();
+  
+  channel = socket.channel("video:lobby", {});
+  
+  channel.join()
+    .receive("ok", resp => {
+      updateStatus("Connecté à la salle de consultation");
+      updateDebug("Socket connecté avec succès");
+      joinRoom.style.display = 'none';
+      startCall.disabled = false;
+      leaveRoom.style.display = 'inline-block';
+    })
+    .receive("error", resp => {
+      updateStatus("Erreur de connexion à la salle");
+      updateDebug("Erreur socket: " + JSON.stringify(resp));
+    });
+  
+  channel.on("user_joined", payload => {
+    updateStatus("Un autre participant a rejoint la salle");
+    updateDebug("Nouveau participant détecté");
+    if (localStream) {
+      createPeerConnection();
+      isInitiator = true;
+    }
+  });
+  
+  channel.on("offer", payload => {
+    updateDebug("Réception d'une offre WebRTC");
+    if (peerConnection) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer))
+        .then(() => peerConnection.createAnswer())
+        .then(answer => {
+          peerConnection.setLocalDescription(answer);
+          channel.push("answer", { answer: answer });
+          updateDebug("Réponse WebRTC envoyée");
+        });
+    }
+  });
+  
+  channel.on("answer", payload => {
+    updateDebug("Réception d'une réponse WebRTC");
+    if (peerConnection) {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
+    }
+  });
+  
+  channel.on("ice_candidate", payload => {
+    updateDebug("Réception d'un candidat ICE");
+    if (peerConnection) {
+      peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+    }
+  });
+  
+  channel.on("user_left", payload => {
+    updateStatus("Un participant a quitté la salle");
+    updateDebug("Participant déconnecté");
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+  });
+  
+  channel.push("user_joined", {});
+};
+
+function createPeerConnection() {
+  const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+  peerConnection = new RTCPeerConnection(configuration);
+  updateDebug("Connexion peer WebRTC créée");
+  
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+    updateDebug("Piste ajoutée: " + track.kind);
+  });
+  
+  peerConnection.onicecandidate = event => {
+    if (event.candidate) {
+      channel.push("ice_candidate", { candidate: event.candidate });
+      updateDebug("Candidat ICE envoyé");
+    }
+  };
+  
+  peerConnection.ontrack = event => {
+    remoteVideo.srcObject = event.streams[0];
+    updateStatus("Connexion vidéo établie !");
+    updateDebug("Flux distant reçu");
+  };
+  
+  if (isInitiator) {
+    peerConnection.createOffer()
+      .then(offer => {
+        peerConnection.setLocalDescription(offer);
+        channel.push("offer", { offer: offer });
+        updateDebug("Offre WebRTC envoyée");
+      });
+  }
+}
+
+startCall.onclick = async () => {
+  // Vérifier la compatibilité avant de commencer
+  if (!checkWebRTCSupport()) {
+    return;
+  }
+  
+  try {
+    updateStatus("Demande d'accès à la caméra et au microphone...");
+    updateDebug("Demande getUserMedia...");
+    
+    // Essayer d'abord avec vidéo et audio
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      video: true, 
+      audio: true
+    });
+    
+    localVideo.srcObject = localStream;
+    updateStatus("Caméra et microphone activés !");
+    updateDebug("Flux local obtenu avec succès");
+    
+    startCall.style.display = 'none';
+    stopCall.style.display = 'inline-block';
+    
+    if (channel) {
+      createPeerConnection();
+      isInitiator = true;
+    }
+    
+  } catch (error) {
+    updateStatus(`Erreur: ${error.message}`);
+    updateDebug(`Erreur détaillée: ${error.name} - ${error.message}`);
+    
+    if (error.name === 'NotAllowedError') {
+      updateDebug("L'utilisateur a refusé l'accès à la caméra");
+    } else if (error.name === 'NotFoundError') {
+      updateDebug("Aucune caméra trouvée");
+    } else if (error.name === 'NotReadableError') {
+      updateDebug("La caméra est utilisée par une autre application");
+    } else if (error.name === 'NotSupportedError') {
+      updateDebug("WebRTC n'est pas supporté sur cette page (HTTPS requis)");
+      updateDebug("Essayez d'accéder via localhost:4001 au lieu de l'IP");
+      document.getElementById('ipWarning').style.display = 'block';
+    } else if (error.name === 'SecurityError') {
+      updateDebug("Erreur de sécurité - vérifiez les permissions");
+    } else if (error.name === 'TypeError') {
+      updateDebug("Erreur de type - getUserMedia non implémenté");
+      updateDebug("Navigateur non compatible avec WebRTC");
+      document.getElementById('ipWarning').style.display = 'block';
+    }
+    
+    // Essayer avec vidéo seulement
+    try {
+      updateDebug("Tentative avec vidéo seulement...");
+      localStream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: false
+      });
+      
+      localVideo.srcObject = localStream;
+      updateStatus("Caméra activée (sans audio) !");
+      updateDebug("Flux vidéo obtenu avec succès");
+      
+      startCall.style.display = 'none';
+      stopCall.style.display = 'inline-block';
+      
+      if (channel) {
+        createPeerConnection();
+        isInitiator = true;
+      }
+    } catch (videoError) {
+      updateDebug("Échec également avec vidéo seulement: " + videoError.message);
+      document.getElementById('ipWarning').style.display = 'block';
+    }
+  }
+};
+
+stopCall.onclick = () => {
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localVideo.srcObject = null;
+    localStream = null;
+    updateDebug("Flux local arrêté");
+  }
+  
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+    updateDebug("Connexion peer fermée");
+  }
+  
+  remoteVideo.srcObject = null;
+  updateStatus("Appel arrêté");
+  startCall.style.display = 'inline-block';
+  stopCall.style.display = 'none';
+};
+
+leaveRoom.onclick = () => {
+  if (channel) {
+    channel.push("user_left", {});
+    channel.leave();
+    updateDebug("Déconnexion du socket");
+  }
+  
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localVideo.srcObject = null;
+    localStream = null;
+  }
+  
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+  
+  remoteVideo.srcObject = null;
+  updateStatus("Déconnecté de la salle");
+  joinRoom.style.display = 'inline-block';
+  startCall.disabled = true;
+  leaveRoom.style.display = 'none';
+};
+</script>
+
+<style>
+.video-consultation {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.video-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+  justify-content: center;
+}
+
+.video-wrapper {
+  text-align: center;
+}
+
+video {
+  width: 350px;
+  height: 250px;
+  background: #000;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  background: #007cba;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 5px;
+}
+
+button:hover:not(:disabled) {
+  background: #005a87;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  margin: 5px;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+.status {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.debug {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.warning {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  color: #856404;
+}
+
+.warning h3 {
+  margin-top: 0;
+  color: #856404;
+}
+
+.warning h4 {
+  margin: 15px 0 10px 0;
+  color: #856404;
+}
+
+.warning ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.warning li {
+  margin: 5px 0;
+}
+
+.warning code {
+  background: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.solutions {
+  margin-top: 15px;
+}
+</style> 

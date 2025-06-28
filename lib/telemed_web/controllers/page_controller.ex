@@ -6,4 +6,8 @@ defmodule TelemedWeb.PageController do
     # so skip the default app layout.
     render(conn, :home, layout: false)
   end
+
+  def test_camera(conn, _params) do
+    render(conn, :test_camera)
+  end
 end

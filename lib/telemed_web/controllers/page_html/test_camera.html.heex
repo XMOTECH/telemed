@@ -1,0 +1,235 @@
+<div class="camera-test">
+  <h2>Test de Caméra - Diagnostic WebRTC</h2>
+  
+  <div class="test-container">
+    <video id="testVideo" autoplay playsinline muted></video>
+    <p>Vidéo de test</p>
+  </div>
+  
+  <div class="controls">
+    <button id="testCamera" type="button">Tester la Caméra</button>
+    <button id="stopTest" type="button" style="display:none;">Arrêter le Test</button>
+  </div>
+  
+  <div id="testStatus" class="status">Prêt à tester la caméra</div>
+  <div id="testDebug" class="debug"></div>
+  
+  <div class="info">
+    <h3>Informations de diagnostic :</h3>
+    <ul>
+      <li><strong>Navigateur :</strong> <span id="browserInfo"></span></li>
+      <li><strong>URL :</strong> <span id="urlInfo"></span></li>
+      <li><strong>Protocole :</strong> <span id="protocolInfo"></span></li>
+      <li><strong>mediaDevices :</strong> <span id="mediaDevicesInfo"></span></li>
+      <li><strong>getUserMedia :</strong> <span id="getUserMediaInfo"></span></li>
+      <li><strong>RTCPeerConnection :</strong> <span id="rtcInfo"></span></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+let testVideo = document.getElementById("testVideo");
+let testCamera = document.getElementById("testCamera");
+let stopTest = document.getElementById("stopTest");
+let testStatus = document.getElementById("testStatus");
+let testDebug = document.getElementById("testDebug");
+let testStream = null;
+
+function updateTestStatus(message) {
+  testStatus.textContent = message;
+  console.log(message);
+}
+
+function updateTestDebug(message) {
+  testDebug.innerHTML += "<br>" + message;
+}
+
+function updateInfo(id, value) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+// Diagnostic au chargement
+document.addEventListener('DOMContentLoaded', function() {
+  updateTestDebug("=== DIAGNOSTIC WEBCAM ===");
+  updateTestDebug("Chargement de la page...");
+  
+  // Informations de base
+  updateInfo('browserInfo', navigator.userAgent);
+  updateInfo('urlInfo', window.location.href);
+  updateInfo('protocolInfo', window.location.protocol);
+  
+  // Vérification des APIs WebRTC
+  updateInfo('mediaDevicesInfo', navigator.mediaDevices ? "✅ Disponible" : "❌ Non disponible");
+  updateInfo('getUserMediaInfo', (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "✅ Disponible" : "❌ Non disponible");
+  updateInfo('rtcInfo', (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) ? "✅ Disponible" : "❌ Non disponible");
+  
+  updateTestDebug("Navigateur: " + navigator.userAgent);
+  updateTestDebug("URL: " + window.location.href);
+  updateTestDebug("Protocole: " + window.location.protocol);
+  updateTestDebug("mediaDevices: " + (navigator.mediaDevices ? "OK" : "NOK"));
+  updateTestDebug("getUserMedia: " + ((navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "OK" : "NOK"));
+  updateTestDebug("RTCPeerConnection: " + ((window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) ? "OK" : "NOK"));
+  
+  // Avertissement HTTPS
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    updateTestDebug("⚠️ ATTENTION: WebRTC peut nécessiter HTTPS sur certains navigateurs");
+    updateTestDebug("Recommandation: Utilisez localhost:4001 au lieu de l'IP");
+  }
+});
+
+testCamera.onclick = async () => {
+  updateTestStatus("Test de la caméra en cours...");
+  updateTestDebug("=== DÉBUT DU TEST CAMÉRA ===");
+  
+  try {
+    updateTestDebug("Demande d'accès à la caméra...");
+    
+    testStream = await navigator.mediaDevices.getUserMedia({ 
+      video: true, 
+      audio: false
+    });
+    
+    testVideo.srcObject = testStream;
+    updateTestStatus("✅ Caméra activée avec succès !");
+    updateTestDebug("✅ Flux vidéo obtenu avec succès");
+    updateTestDebug("Nombre de pistes: " + testStream.getTracks().length);
+    
+    testStream.getTracks().forEach((track, index) => {
+      updateTestDebug(`Piste ${index}: ${track.kind} - ${track.label || 'Sans nom'}`);
+    });
+    
+    testCamera.style.display = 'none';
+    stopTest.style.display = 'inline-block';
+    
+  } catch (error) {
+    updateTestStatus(`❌ Erreur: ${error.message}`);
+    updateTestDebug(`❌ Erreur détaillée: ${error.name} - ${error.message}`);
+    
+    if (error.name === 'NotAllowedError') {
+      updateTestDebug("💡 Solution: L'utilisateur a refusé l'accès à la caméra");
+      updateTestDebug("   - Cliquez sur 'Autoriser' dans la popup du navigateur");
+    } else if (error.name === 'NotFoundError') {
+      updateTestDebug("💡 Solution: Aucune caméra trouvée");
+      updateTestDebug("   - Vérifiez que votre caméra est connectée et fonctionne");
+    } else if (error.name === 'NotReadableError') {
+      updateTestDebug("💡 Solution: La caméra est utilisée par une autre application");
+      updateTestDebug("   - Fermez les autres applications qui utilisent la caméra");
+    } else if (error.name === 'NotSupportedError') {
+      updateTestDebug("💡 Solution: WebRTC non supporté sur cette page");
+      updateTestDebug("   - Essayez d'accéder via localhost:4001 au lieu de l'IP");
+    } else if (error.name === 'SecurityError') {
+      updateTestDebug("💡 Solution: Erreur de sécurité");
+      updateTestDebug("   - Vérifiez les permissions du navigateur");
+    } else if (error.name === 'TypeError') {
+      updateTestDebug("💡 Solution: getUserMedia non implémenté");
+      updateTestDebug("   - Navigateur non compatible avec WebRTC");
+    }
+  }
+};
+
+stopTest.onclick = () => {
+  if (testStream) {
+    testStream.getTracks().forEach(track => track.stop());
+    testVideo.srcObject = null;
+    testStream = null;
+    updateTestDebug("Flux vidéo arrêté");
+  }
+  
+  updateTestStatus("Test arrêté");
+  testCamera.style.display = 'inline-block';
+  stopTest.style.display = 'none';
+};
+</script>
+
+<style>
+.camera-test {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.test-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+#testVideo {
+  width: 400px;
+  height: 300px;
+  background: #000;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  background: #007cba;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 5px;
+}
+
+button:hover:not(:disabled) {
+  background: #005a87;
+}
+
+.status {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.debug {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e8f4fd;
+  border: 1px solid #bee5eb;
+  border-radius: 4px;
+}
+
+.info h3 {
+  margin-top: 0;
+  color: #0c5460;
+}
+
+.info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.info li {
+  margin: 5px 0;
+  padding: 5px 0;
+  border-bottom: 1px solid #d1ecf1;
+}
+
+.info li:last-child {
+  border-bottom: none;
+}
+</style> 

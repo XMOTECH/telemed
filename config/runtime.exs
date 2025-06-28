@@ -49,7 +49,7 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
+  port = String.to_integer(System.get_env("PORT") || "8080")
 
   config :telemed, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
@@ -64,6 +64,10 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+  # Force SSL in production
+  config :telemed, TelemedWeb.Endpoint,
+    force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto]]
 
   # ## SSL Support
   #

@@ -1,0 +1,25 @@
+<.header>
+  Listing Medical records
+  <:actions>
+    <.link href={~p"/medical_records/new"}>
+      <.button>New Medical record</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table id="medical_records" rows={@medical_records} row_click={&JS.navigate(~p"/medical_records/#{&1}")}>
+  <:col :let={medical_record} label="Nom">{medical_record.nom}</:col>
+  <:col :let={medical_record} label="Age">{medical_record.age}</:col>
+  <:col :let={medical_record} label="Description">{medical_record.description}</:col>
+  <:action :let={medical_record}>
+    <div class="sr-only">
+      <.link navigate={~p"/medical_records/#{medical_record}"}>Show</.link>
+    </div>
+    <.link navigate={~p"/medical_records/#{medical_record}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={medical_record}>
+    <.link href={~p"/medical_records/#{medical_record}"} method="delete" data-confirm="Are you sure?">
+      Delete
+    </.link>
+  </:action>
+</.table>

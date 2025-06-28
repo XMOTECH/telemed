@@ -1,0 +1,8 @@
+_build/
+deps/
+.git/
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+priv/static/assets/ 

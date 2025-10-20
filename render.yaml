@@ -1,11 +1,9 @@
 services:
   - type: web
     name: telemed
-    env: elixir
+    runtime: docker
     region: frankfurt
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "mix phx.server"
     envVars:
       - key: MIX_ENV
         value: prod

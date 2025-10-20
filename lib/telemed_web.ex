@@ -87,8 +87,30 @@ defmodule TelemedWeb do
 
       # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components
-      import TelemedWeb.CoreComponents
+
+      # Import fonctions de base de Phoenix.Component (link, form, etc.)
+      import Phoenix.Component
+
+      # Simple UI components (épurés - pas de styles imposés)
+      import TelemedWeb.SimpleComponents
+
+      # Medical UI components (composants médicaux personnalisés)
+      import TelemedWeb.MedicalComponents
+
+      # Navigation components (avec accessibilité WCAG 2.1)
+      import TelemedWeb.NavComponents
+
+      # Dashboard components (stat cards, grilles)
+      import TelemedWeb.DashboardComponents
+
+      # DME components (Dossier Médical Électronique v2 - Timeline SOAP)
+      import TelemedWeb.DmeComponents
+
+      # Video consultation components (interface moderne Discord/Zoom)
+      import TelemedWeb.VideoComponents
+
+      # Core components Phoenix (désactivé - perturbe la typographie)
+      # import TelemedWeb.CoreComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS

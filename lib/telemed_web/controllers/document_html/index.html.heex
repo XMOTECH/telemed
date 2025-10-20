@@ -1,0 +1,91 @@
+<div class="max-w-5xl mx-auto p-6">
+  <div class="mb-8">
+    <.link href={~p"/medical_records/#{@medical_record.id}"} class="text-blue-600 hover:text-blue-800 flex items-center mb-4">
+      ← Retour au dossier médical
+    </.link>
+    
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Documents Médicaux</h1>
+        <p class="text-gray-600 mt-1">Dossier: <%= @medical_record.nom %></p>
+      </div>
+
+      <.link 
+        href={~p"/medical_records/#{@medical_record.id}/documents/new"}
+        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+      >
+        <span class="mr-2">📤</span> Upload Document
+      </.link>
+    </div>
+  </div>
+
+  <%= if @documents == [] do %>
+    <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+      <div class="text-gray-400 text-6xl mb-4">📁</div>
+      <p class="text-gray-600 text-lg mb-2">Aucun document</p>
+      <p class="text-gray-400 text-sm mb-6">Ce dossier médical n'a pas encore de documents</p>
+      
+      <.link 
+        href={~p"/medical_records/#{@medical_record.id}/documents/new"}
+        class="inline-flex items-center bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold"
+      >
+        <span class="mr-2">📤</span> Upload Premier Document
+      </.link>
+    </div>
+  <% else %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <%= for document <- @documents do %>
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <!-- Icon & Type -->
+          <div class="flex items-start justify-between mb-4">
+            <div class="text-5xl">
+              <%= document_icon(document.content_type) %>
+            </div>
+            <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+              <%= document.document_type %>
+            </span>
+          </div>
+
+          <!-- Filename -->
+          <h3 class="font-semibold text-gray-900 mb-2 truncate" title={document.filename}>
+            <%= document.filename %>
+          </h3>
+
+          <!-- Description -->
+          <%= if document.description do %>
+            <p class="text-sm text-gray-600 mb-3">
+              <%= document.description %>
+            </p>
+          <% end %>
+
+          <!-- Metadata -->
+          <div class="text-xs text-gray-500 space-y-1 mb-4">
+            <p>📏 <%= format_file_size(document.file_size) %></p>
+            <p>👤 <%= document.uploaded_by.email %></p>
+            <p>📅 <%= Calendar.strftime(document.inserted_at, "%d/%m/%Y %H:%M") %></p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center space-x-2">
+            <.link 
+              href={~p"/documents/#{document.id}/download"}
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-center px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              ⬇️ Télécharger
+            </.link>
+
+            <.link 
+              href={~p"/documents/#{document.id}"}
+              method="delete"
+              data-confirm="Supprimer ce document ?"
+              class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              🗑️
+            </.link>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+

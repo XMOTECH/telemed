@@ -18,7 +18,36 @@ defmodule Telemed.MedicalRecords do
 
   """
   def list_medical_records do
-    Repo.all(MedicalRecord)
+    MedicalRecord
+    |> Repo.all()
+    |> Repo.preload([:user, :doctor, :last_modified_by])
+  end
+
+  def list_medical_records_for_user(user_id) do
+    MedicalRecord
+    |> where(user_id: ^user_id)
+    |> Repo.all()
+    |> Repo.preload([:user, :doctor, :last_modified_by])
+  end
+
+  # Alias pour API
+  def list_user_records(user_id), do: list_medical_records_for_user(user_id)
+
+  def list_medical_records_for_doctor(doctor_id) do
+    MedicalRecord
+    |> where(doctor_id: ^doctor_id)
+    |> Repo.all()
+    |> Repo.preload([:user, :doctor, :last_modified_by])
+  end
+
+  # Pour API avec params (pagination, filtres, etc.)
+  def list_doctor_records(doctor_id, _params \\ %{}) do
+    list_medical_records_for_doctor(doctor_id)
+  end
+
+  # Pour admin
+  def list_all_records(_params \\ %{}) do
+    list_medical_records()
   end
 
   @doc """
@@ -35,7 +64,11 @@ defmodule Telemed.MedicalRecords do
       ** (Ecto.NoResultsError)
 
   """
-  def get_medical_record!(id), do: Repo.get!(MedicalRecord, id)
+  def get_medical_record!(id) do
+    MedicalRecord
+    |> Repo.get!(id)
+    |> Repo.preload([:user, :doctor, :last_modified_by])
+  end
 
   @doc """
   Creates a medical_record.

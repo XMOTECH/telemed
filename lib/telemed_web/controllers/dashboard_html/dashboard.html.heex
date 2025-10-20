@@ -1,0 +1,476 @@
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+      <%= case @role do %>
+        <% "patient" -> %> Mon Dashboard Patient
+        <% "doctor" -> %> Mon Dashboard Médecin
+        <% "admin" -> %> Dashboard Administrateur
+        <% _ -> %> Dashboard
+      <% end %>
+    </h1>
+    <p class="text-gray-600">
+      Bienvenue, <span class="font-medium"><%= @user.email %></span>
+    </p>
+  </div>
+
+  <%= if @role == "patient" do %>
+    <!-- Patient Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Stats -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Rendez-vous</p>
+            <p class="text-3xl font-bold text-blue-600"><%= @dashboard.stats.total_appointments %></p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-full">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Dossiers Médicaux</p>
+            <p class="text-3xl font-bold text-green-600"><%= @dashboard.stats.total_medical_records %></p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-full">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Notifications</p>
+            <p class="text-3xl font-bold text-yellow-600"><%= length(@dashboard.notifications) %></p>
+          </div>
+          <div class="p-3 bg-yellow-100 rounded-full">
+            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Upcoming Appointments -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Prochains Rendez-vous</h2>
+        <%= if Enum.empty?(@dashboard.upcoming_appointments) do %>
+          <p class="text-gray-500">Aucun rendez-vous à venir</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for appointment <- Enum.take(@dashboard.upcoming_appointments, 5) do %>
+              <a href={~p"/appointments/#{appointment.id}"} class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="font-medium text-gray-900"><%= Calendar.strftime(appointment.scheduled_at, "%d/%m/%Y à %H:%M") %></p>
+                    <%= if appointment.notes do %>
+                      <p class="text-sm text-gray-600 mt-1"><%= appointment.notes %></p>
+                    <% end %>
+                  </div>
+                  <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 capitalize">
+                    <%= appointment.status %>
+                  </span>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="mt-4">
+          <a href="/appointments" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Voir tous les rendez-vous →
+          </a>
+        </div>
+      </div>
+
+      <!-- Recent Notifications -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Notifications Récentes</h2>
+        <%= if Enum.empty?(@dashboard.notifications) do %>
+          <p class="text-gray-500">Aucune notification</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for notification <- @dashboard.notifications do %>
+              <div class={"p-4 rounded-lg #{if notification.read, do: "bg-gray-50", else: "bg-blue-50"}"}>
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="font-medium text-gray-900"><%= notification.title %></p>
+                    <p class="text-sm text-gray-600 mt-1"><%= notification.message %></p>
+                    <p class="text-xs text-gray-400 mt-2"><%= Calendar.strftime(notification.inserted_at, "%d/%m/%Y à %H:%M") %></p>
+                  </div>
+                  <%= if !notification.read do %>
+                    <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="mt-4">
+          <a href="/notifications" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Voir toutes les notifications →
+          </a>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= if @role == "doctor" do %>
+    <!-- Doctor Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Total RDV</p>
+            <p class="text-3xl font-bold text-blue-600"><%= @dashboard.stats.total_appointments %></p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-full">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Patients</p>
+            <p class="text-3xl font-bold text-green-600"><%= @dashboard.stats.total_patients %></p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-full">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Aujourd'hui</p>
+            <p class="text-3xl font-bold text-yellow-600"><%= length(@dashboard.today_appointments) %></p>
+          </div>
+          <div class="p-3 bg-yellow-100 rounded-full">
+            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">À venir</p>
+            <p class="text-3xl font-bold text-purple-600"><%= length(@dashboard.upcoming_appointments) %></p>
+          </div>
+          <div class="p-3 bg-purple-100 rounded-full">
+            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Today's Appointments -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Rendez-vous Aujourd'hui</h2>
+        <%= if Enum.empty?(@dashboard.today_appointments) do %>
+          <p class="text-gray-500">Aucun rendez-vous aujourd'hui</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for appointment <- @dashboard.today_appointments do %>
+              <a href={~p"/appointments/#{appointment.id}"} class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="font-medium text-gray-900"><%= Calendar.strftime(appointment.scheduled_at, "%H:%M") %></p>
+                    <%= if appointment.notes do %>
+                      <p class="text-sm text-gray-600 mt-1"><%= appointment.notes %></p>
+                    <% end %>
+                  </div>
+                  <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 capitalize">
+                    <%= appointment.status %>
+                  </span>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Upcoming Appointments -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Prochains Rendez-vous</h2>
+        <%= if Enum.empty?(@dashboard.upcoming_appointments) do %>
+          <p class="text-gray-500">Aucun rendez-vous à venir</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for appointment <- Enum.take(@dashboard.upcoming_appointments, 5) do %>
+              <a href={~p"/appointments/#{appointment.id}"} class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="font-medium text-gray-900"><%= Calendar.strftime(appointment.scheduled_at, "%d/%m/%Y à %H:%M") %></p>
+                    <%= if appointment.notes do %>
+                      <p class="text-sm text-gray-600 mt-1"><%= appointment.notes %></p>
+                    <% end %>
+                  </div>
+                  <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 capitalize">
+                    <%= appointment.status %>
+                  </span>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="mt-4">
+          <a href="/appointments" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Voir tous les rendez-vous →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Notifications Récentes</h2>
+      <%= if Enum.empty?(@dashboard.notifications) do %>
+        <p class="text-gray-500">Aucune notification</p>
+      <% else %>
+        <div class="space-y-3">
+          <%= for notification <- @dashboard.notifications do %>
+            <div class={"p-4 rounded-lg #{if notification.read, do: "bg-gray-50", else: "bg-blue-50"}"}>
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="font-medium text-gray-900"><%= notification.title %></p>
+                  <p class="text-sm text-gray-600 mt-1"><%= notification.message %></p>
+                  <p class="text-xs text-gray-400 mt-2"><%= Calendar.strftime(notification.inserted_at, "%d/%m/%Y à %H:%M") %></p>
+                </div>
+                <%= if !notification.read do %>
+                  <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+      <div class="mt-4">
+        <a href="/notifications" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          Voir toutes les notifications →
+        </a>
+      </div>
+    </div>
+  <% end %>
+
+  <%= if @role == "doctor" do %>
+    <!-- Doctor Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Total RDV</p>
+            <p class="text-3xl font-bold text-blue-600"><%= @dashboard.stats.total_appointments %></p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-full">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Patients</p>
+            <p class="text-3xl font-bold text-green-600"><%= @dashboard.stats.total_patients %></p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-full">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Aujourd'hui</p>
+            <p class="text-3xl font-bold text-yellow-600"><%= length(@dashboard.today_appointments) %></p>
+          </div>
+          <div class="p-3 bg-yellow-100 rounded-full">
+            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">À venir</p>
+            <p class="text-3xl font-bold text-purple-600"><%= length(@dashboard.upcoming_appointments) %></p>
+          </div>
+          <div class="p-3 bg-purple-100 rounded-full">
+            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Today's Appointments -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Aujourd'hui</h2>
+        <%= if Enum.empty?(@dashboard.today_appointments) do %>
+          <p class="text-gray-500">Aucun rendez-vous aujourd'hui</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for appointment <- @dashboard.today_appointments do %>
+              <a href={~p"/appointments/#{appointment.id}"} class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                <p class="font-medium text-gray-900"><%= Calendar.strftime(appointment.scheduled_at, "%H:%M") %></p>
+                <%= if appointment.notes do %>
+                  <p class="text-sm text-gray-600 mt-1"><%= appointment.notes %></p>
+                <% end %>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Upcoming Appointments -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Prochains Rendez-vous</h2>
+        <%= if Enum.empty?(@dashboard.upcoming_appointments) do %>
+          <p class="text-gray-500">Aucun rendez-vous à venir</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for appointment <- Enum.take(@dashboard.upcoming_appointments, 5) do %>
+              <a href={~p"/appointments/#{appointment.id}"} class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                <p class="font-medium text-gray-900"><%= Calendar.strftime(appointment.scheduled_at, "%d/%m/%Y à %H:%M") %></p>
+                <%= if appointment.notes do %>
+                  <p class="text-sm text-gray-600 mt-1"><%= appointment.notes %></p>
+                <% end %>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="mt-4">
+          <a href="/appointments" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Voir tous →
+          </a>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= if @role == "admin" do %>
+    <!-- Admin Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Utilisateurs</p>
+            <p class="text-3xl font-bold text-blue-600"><%= @dashboard.stats.total_users %></p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-full">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Médecins</p>
+            <p class="text-3xl font-bold text-green-600"><%= @dashboard.stats.total_doctors %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Patients</p>
+            <p class="text-3xl font-bold text-yellow-600"><%= @dashboard.stats.total_patients %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm">Rendez-vous</p>
+            <p class="text-3xl font-bold text-purple-600"><%= @dashboard.stats.total_appointments %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- System Health -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">État du Système</h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Base de données</span>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              <%= @dashboard.system_health.database_status %>
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Serveur</span>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              <%= @dashboard.system_health.server_uptime %>
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Sessions actives</span>
+            <span class="font-medium text-gray-900"><%= @dashboard.system_health.active_sessions %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Utilisateurs Récents</h2>
+        <%= if Enum.empty?(@dashboard.recent_users) do %>
+          <p class="text-gray-500">Aucun utilisateur</p>
+        <% else %>
+          <div class="space-y-3">
+            <%= for user <- @dashboard.recent_users do %>
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                <div>
+                  <p class="font-medium text-gray-900"><%= user.email %></p>
+                  <p class="text-sm text-gray-500 capitalize"><%= user.role %></p>
+                </div>
+                <span class={"px-3 py-1 rounded-full text-xs font-medium #{if user.confirmed_at, do: "bg-green-100 text-green-800", else: "bg-yellow-100 text-yellow-800"}"}>
+                  <%= if user.confirmed_at, do: "Confirmé", else: "En attente" %>
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,204 @@
+<div class="max-w-4xl mx-auto">
+  <!-- Page Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Paramètres du Profil</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Gérez vos informations personnelles et vos préférences de compte
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Sidebar Menu -->
+    <div class="lg:col-span-1">
+      <nav class="space-y-1">
+        <a href="/settings/profile" class="flex items-center px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border-l-4 border-blue-700 rounded-r-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Informations Personnelles
+        </a>
+        
+        <a href="/users/settings" class="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-r-lg">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+          Sécurité & Mot de passe
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-lg shadow">
+        <.simple_form :let={f} for={@changeset} action={~p"/settings/profile"} method="post">
+          <div class="px-6 py-5 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Profil Public</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              Ces informations seront visibles par les autres utilisateurs de la plateforme
+            </p>
+          </div>
+
+          <div class="px-6 py-5 space-y-6">
+            <!-- Avatar Section -->
+            <div class="flex items-center space-x-6">
+              <div class="flex-shrink-0">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                  <%= if @changeset.data.first_name && @changeset.data.last_name do %>
+                    <%= String.first(@changeset.data.first_name) <> String.first(@changeset.data.last_name) %>
+                  <% else %>
+                    <%= String.first(@changeset.data.email) |> String.upcase() %>
+                  <% end %>
+                </div>
+              </div>
+              <div>
+                <h4 class="text-sm font-medium text-gray-900">Photo de profil</h4>
+                <p class="text-sm text-gray-500 mb-2">Avatar généré automatiquement à partir de vos initiales</p>
+                <button type="button" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  Changer l'avatar (Bientôt disponible)
+                </button>
+              </div>
+            </div>
+
+            <!-- Name Fields -->
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <label for="user_first_name" class="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom
+                </label>
+                <input
+                  type="text"
+                  name="user[first_name]"
+                  id="user_first_name"
+                  value={Phoenix.HTML.Form.input_value(f, :first_name)}
+                  class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Votre prénom"
+                  required
+                />
+                <.error :for={msg <- Enum.map(Keyword.get_values(f.errors || [], :first_name), &translate_error/1)}>
+                  {msg}
+                </.error>
+              </div>
+
+              <div>
+                <label for="user_last_name" class="block text-sm font-medium text-gray-700 mb-2">
+                  Nom
+                </label>
+                <input
+                  type="text"
+                  name="user[last_name]"
+                  id="user_last_name"
+                  value={Phoenix.HTML.Form.input_value(f, :last_name)}
+                  class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Votre nom"
+                  required
+                />
+                <.error :for={msg <- Enum.map(Keyword.get_values(f.errors || [], :last_name), &translate_error/1)}>
+                  {msg}
+                </.error>
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div>
+              <label for="user_phone" class="block text-sm font-medium text-gray-700 mb-2">
+                Téléphone
+              </label>
+              <input
+                type="tel"
+                name="user[phone]"
+                id="user_phone"
+                value={Phoenix.HTML.Form.input_value(f, :phone)}
+                class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="+33 6 12 34 56 78"
+              />
+              <p class="mt-1 text-sm text-gray-500">Format recommandé : +33 6 12 34 56 78</p>
+              <.error :for={msg <- Enum.map(Keyword.get_values(f.errors || [], :phone), &translate_error/1)}>
+                {msg}
+              </.error>
+            </div>
+
+            <!-- Speciality (only for doctors) -->
+            <%= if @changeset.data.role == "doctor" do %>
+              <div>
+                <label for="user_speciality" class="block text-sm font-medium text-gray-700 mb-2">
+                  Spécialité Médicale
+                </label>
+                <select
+                  name="user[speciality]"
+                  id="user_speciality"
+                  class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">Sélectionnez une spécialité</option>
+                  <option value="Cardiologie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Cardiologie"}>Cardiologie</option>
+                  <option value="Dermatologie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Dermatologie"}>Dermatologie</option>
+                  <option value="Pédiatrie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Pédiatrie"}>Pédiatrie</option>
+                  <option value="Médecine Générale" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Médecine Générale"}>Médecine Générale</option>
+                  <option value="Pneumologie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Pneumologie"}>Pneumologie</option>
+                  <option value="Neurologie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Neurologie"}>Neurologie</option>
+                  <option value="Psychiatrie" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Psychiatrie"}>Psychiatrie</option>
+                  <option value="Autre" selected={Phoenix.HTML.Form.input_value(f, :speciality) == "Autre"}>Autre</option>
+                </select>
+                <.error :for={msg <- Enum.map(Keyword.get_values(f.errors || [], :speciality), &translate_error/1)}>
+                  {msg}
+                </.error>
+              </div>
+            <% end %>
+
+            <!-- Email (Read-only, link to change) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <span class="text-gray-900">{@changeset.data.email}</span>
+                <a href="/users/settings" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  Modifier l'email
+                </a>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">
+                Votre adresse email est utilisée pour vous connecter
+              </p>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg flex items-center justify-between">
+            <a href="/dashboard" class="text-sm font-medium text-gray-700 hover:text-gray-900">
+              Annuler
+            </a>
+            <button
+              type="submit"
+              class="inline-flex items-center px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Enregistrer les modifications
+            </button>
+          </div>
+        </.simple_form>
+      </div>
+
+      <!-- Additional Info Card -->
+      <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Informations importantes</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <ul class="list-disc list-inside space-y-1">
+                <li>Vos informations sont sécurisées et conformes au RGPD</li>
+                <li>Seuls les professionnels de santé autorisés peuvent accéder à vos données</li>
+                <li>Vous pouvez modifier vos informations à tout moment</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

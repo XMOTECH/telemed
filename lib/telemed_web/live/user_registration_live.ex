@@ -1,69 +1,78 @@
 defmodule TelemedWeb.UserRegistrationLive do
   use TelemedWeb, :live_view
 
-  alias Telemed.Accounts
-  alias Telemed.Accounts.User
-
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-200">
-      <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">Créer un compte</h2>
-        <.form for={@form} phx-submit="save" class="space-y-4">
-          <.input field={@form[:email]} type="email" label="Email" class="w-full" />
-          <.input field={@form[:password]} type="password" label="Mot de passe" class="w-full" />
-          <.input field={@form[:password_confirmation]} type="password" label="Confirmer le mot de passe" class="w-full" />
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">Créer mon compte</button>
-        </.form>
-        <p class="mt-6 text-center text-sm">
-          Déjà inscrit ?
-          <.link patch={~p"/users/log_in"} class="text-blue-600 hover:underline">Se connecter</.link>
-        </p>
-      </div>
+    <div class="mx-auto max-w-sm">
+      <.header class="text-center">
+        Créer un compte
+        <:subtitle>
+          Déjà inscrit ?
+          <.link navigate={~p"/users/log_in"} class="font-semibold text-brand hover:underline">
+            Connectez-vous
+          </.link>
+          à votre compte.
+        </:subtitle>
+      </.header>
+
+      <form method="post" action="/users/register" class="space-y-4">
+        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+
+        <div>
+          <label for="user_email" class="block text-sm font-semibold leading-6 text-zinc-800">
+            Email
+          </label>
+          <input
+            type="email"
+            name="user[email]"
+            id="user_email"
+            required
+            class="mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px] text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-4 focus:ring-zinc-800/5 sm:text-sm sm:leading-6"
+          />
+        </div>
+
+        <div>
+          <label for="user_password" class="block text-sm font-semibold leading-6 text-zinc-800">
+            Mot de passe <span class="text-xs text-zinc-500">(minimum 12 caractères)</span>
+          </label>
+          <input
+            type="password"
+            name="user[password]"
+            id="user_password"
+            required
+            minlength="12"
+            class="mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px] text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-4 focus:ring-zinc-800/5 sm:text-sm sm:leading-6"
+          />
+        </div>
+
+        <div>
+          <label for="user_role" class="block text-sm font-semibold leading-6 text-zinc-800">
+            Rôle
+          </label>
+          <select
+            name="user[role]"
+            id="user_role"
+            required
+            class="mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px] text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-4 focus:ring-zinc-800/5 sm:text-sm sm:leading-6"
+          >
+            <option value="">Sélectionnez un rôle</option>
+            <option value="patient">Patient</option>
+            <option value="doctor">Médecin</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+
+        <div class="mt-6">
+          <button type="submit" class="w-full rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80">
+            Créer un compte
+          </button>
+        </div>
+      </form>
     </div>
     """
   end
 
   def mount(_params, _session, socket) do
-    changeset = Accounts.change_user_registration(%User{})
-
-    socket =
-      socket
-      |> assign(trigger_submit: false, check_errors: false)
-      |> assign_form(changeset)
-
-    {:ok, socket, temporary_assigns: [form: nil]}
-  end
-
-  def handle_event("save", %{"user" => user_params}, socket) do
-    case Accounts.register_user(user_params) do
-      {:ok, user} ->
-        {:ok, _} =
-          Accounts.deliver_user_confirmation_instructions(
-            user,
-            &url(~p"/users/confirm/#{&1}")
-          )
-
-        changeset = Accounts.change_user_registration(user)
-        {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)}
-    end
-  end
-
-  def handle_event("validate", %{"user" => user_params}, socket) do
-    changeset = Accounts.change_user_registration(%User{}, user_params)
-    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    form = to_form(changeset, as: "user")
-
-    if changeset.valid? do
-      assign(socket, form: form, check_errors: false)
-    else
-      assign(socket, form: form)
-    end
+    {:ok, socket}
   end
 end

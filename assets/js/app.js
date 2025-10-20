@@ -21,10 +21,18 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-import "./webrtc"
+// import "./webrtc"  // Désactivé - remplacé par VideoConsultation
+import { VideoConsultation } from "./video_consultation"
+import { RichChat } from "./rich_chat"
 
 // Expose Phoenix globally for inline scripts
 window.Phoenix = { Socket }
+
+// Expose VideoConsultation globally
+window.VideoConsultation = VideoConsultation
+
+// Expose RichChat globally
+window.RichChat = RichChat
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

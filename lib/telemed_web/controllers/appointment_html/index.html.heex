@@ -1,0 +1,184 @@
+<div class="max-w-7xl mx-auto p-6">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Rendez-vous</h1>
+    <.link href={~p"/appointments/new"} class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+      <span class="mr-2">+</span> Nouveau rendez-vous
+    </.link>
+  </div>
+
+  <!-- Filtres -->
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+    <div class="flex flex-wrap gap-4 items-center">
+      <div class="flex items-center space-x-2">
+        <span class="text-sm font-medium text-gray-700">Filtrer par statut:</span>
+        <button class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+          Tous
+        </button>
+        <button class="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors">
+          En attente
+        </button>
+        <button class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
+          Confirmés
+        </button>
+        <button class="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800 hover:bg-red-200 transition-colors">
+          Refusés
+        </button>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-sm font-medium text-gray-700">Période:</span>
+        <select class="border border-gray-300 rounded-md px-3 py-1 text-sm">
+          <option>Tous</option>
+          <option>Aujourd'hui</option>
+          <option>Cette semaine</option>
+          <option>Ce mois</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Calendrier -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-semibold mb-4">Calendrier</h2>
+      <div class="grid grid-cols-7 gap-1 mb-4">
+        <div class="text-center font-semibold text-gray-600 p-2">Dim</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Lun</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Mar</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Mer</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Jeu</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Ven</div>
+        <div class="text-center font-semibold text-gray-600 p-2">Sam</div>
+      </div>
+      
+      <div class="text-center text-gray-500 py-8">
+        <div class="text-4xl mb-4">📅</div>
+        <p class="font-medium">Calendrier interactif</p>
+        <p class="text-sm">Intégration avec JavaScript pour sélection de dates</p>
+        <p class="text-xs text-gray-400 mt-2">Fonctionnalité à venir</p>
+      </div>
+    </div>
+
+    <!-- Liste des rendez-vous -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-semibold mb-4">Rendez-vous à venir</h2>
+      
+      <%= if @appointments == [] do %>
+        <div class="text-center py-8">
+          <div class="text-gray-400 text-6xl mb-4">📅</div>
+          <p class="text-gray-500 font-medium">Aucun rendez-vous programmé</p>
+          <p class="text-sm text-gray-400 mt-2">Créez votre premier rendez-vous</p>
+          <.link href={~p"/appointments/new"} class="inline-block mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            Créer un rendez-vous
+          </.link>
+        </div>
+      <% else %>
+        <div class="space-y-3">
+          <%= for appointment <- @appointments do %>
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <p class="font-semibold text-gray-900">
+                      <%= appointment.scheduled_at |> Calendar.strftime("%d/%m/%Y à %H:%M") %>
+                    </p>
+                    <span class={["px-2 py-1 text-xs rounded-full font-medium", status_badge_class(appointment.status)]}>
+                      <%= status_label(appointment.status) %>
+                    </span>
+                  </div>
+                  <%= if appointment.doctor do %>
+                    <p class="text-sm text-gray-600 mb-1">
+                      <span class="font-medium">Dr. <%= appointment.doctor.first_name %> <%= appointment.doctor.last_name %></span>
+                    </p>
+                  <% end %>
+                  <%= if appointment.patient do %>
+                    <p class="text-sm text-gray-600 mb-1">
+                      <span class="font-medium"><%= appointment.patient.first_name %> <%= appointment.patient.last_name %></span>
+                    </p>
+                  <% end %>
+                  <%= if appointment.notes && appointment.notes != "" do %>
+                    <p class="text-sm text-gray-500 mt-2 italic">"<%= appointment.notes %>"</p>
+                  <% end %>
+                </div>
+                <div class="flex flex-col space-y-2 ml-4">
+                  <.link href={~p"/appointments/#{appointment}"} class="text-blue-500 hover:text-blue-700 text-sm font-medium">
+                    Voir détails
+                  </.link>
+                  
+                  <%= if appointment.status == "confirmed" do %>
+                    <.link 
+                      href={~p"/instant/start/#{appointment.id}/#{if @current_user.role == "doctor", do: appointment.patient_id, else: appointment.doctor_id}"}
+                      method="post"
+                      class="inline-flex items-center justify-center bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      <span class="mr-1">🎥</span> Appel Vidéo
+                    </.link>
+                  <% end %>
+                  
+                  <%= if appointment.status == "pending" do %>
+                    <div class="flex space-x-1">
+                      <.link href={~p"/appointments/#{appointment}/confirm"} method="patch" class="text-green-500 hover:text-green-700 text-xs">
+                        ✓ Confirmer
+                      </.link>
+                      <.link href={~p"/appointments/#{appointment}/reject"} method="patch" class="text-red-500 hover:text-red-700 text-xs">
+                        ✗ Refuser
+                      </.link>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+      <div class="flex items-center">
+        <div class="text-blue-500 text-2xl mr-3">📊</div>
+        <div>
+          <p class="text-sm text-blue-600 font-medium">Total</p>
+          <p class="text-2xl font-bold text-blue-900"><%= length(@appointments) %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-6 border border-yellow-200">
+      <div class="flex items-center">
+        <div class="text-yellow-500 text-2xl mr-3">⏰</div>
+        <div>
+          <p class="text-sm text-yellow-600 font-medium">En attente</p>
+          <p class="text-2xl font-bold text-yellow-900">
+            <%= @appointments |> Enum.filter(&(&1.status == "pending")) |> length() %>
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
+      <div class="flex items-center">
+        <div class="text-green-500 text-2xl mr-3">✅</div>
+        <div>
+          <p class="text-sm text-green-600 font-medium">Confirmés</p>
+          <p class="text-2xl font-bold text-green-900">
+            <%= @appointments |> Enum.filter(&(&1.status == "confirmed")) |> length() %>
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-6 border border-red-200">
+      <div class="flex items-center">
+        <div class="text-red-500 text-2xl mr-3">❌</div>
+        <div>
+          <p class="text-sm text-red-600 font-medium">Refusés</p>
+          <p class="text-2xl font-bold text-red-900">
+            <%= @appointments |> Enum.filter(&(&1.status == "rejected")) |> length() %>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

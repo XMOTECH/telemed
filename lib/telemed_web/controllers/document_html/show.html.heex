@@ -1,0 +1,92 @@
+<div class="max-w-4xl mx-auto p-6">
+  <div class="mb-8">
+    <.link href={~p"/medical_records/#{@document.medical_record_id}/documents"} class="text-blue-600 hover:text-blue-800 flex items-center">
+      ← Retour aux documents
+    </.link>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-lg p-8">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-start space-x-4">
+        <div class="text-6xl">
+          <%= document_icon(@document.content_type) %>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">
+            <%= @document.filename %>
+          </h1>
+          <div class="flex items-center space-x-4 text-sm text-gray-600">
+            <span class="px-3 py-1 bg-gray-100 rounded-full">
+              <%= @document.document_type %>
+            </span>
+            <span><%= format_file_size(@document.file_size) %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <.link 
+          href={~p"/documents/#{@document.id}/download"}
+          class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold"
+        >
+          ⬇️ Télécharger
+        </.link>
+
+        <.link 
+          href={~p"/documents/#{@document.id}"}
+          method="delete"
+          data-confirm="Supprimer ce document ?"
+          class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-semibold"
+        >
+          🗑️ Supprimer
+        </.link>
+      </div>
+    </div>
+
+    <%= if @document.description do %>
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold text-gray-900 mb-2">Description</h3>
+        <p class="text-gray-700"><%= @document.description %></p>
+      </div>
+    <% end %>
+
+    <div class="grid grid-cols-2 gap-6 mb-6">
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600 mb-1">Uploadé par</p>
+        <p class="font-semibold text-gray-900"><%= @document.uploaded_by.email %></p>
+      </div>
+
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600 mb-1">Date</p>
+        <p class="font-semibold text-gray-900">
+          <%= Calendar.strftime(@document.inserted_at, "%d/%m/%Y à %H:%M") %>
+        </p>
+      </div>
+
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600 mb-1">Type MIME</p>
+        <p class="font-semibold text-gray-900"><%= @document.content_type %></p>
+      </div>
+
+      <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600 mb-1">Partagé avec patient</p>
+        <p class="font-semibold text-gray-900">
+          <%= if @document.is_shared_with_patient, do: "✅ Oui", else: "❌ Non" %>
+        </p>
+      </div>
+    </div>
+
+    <!-- Preview (si image ou PDF) -->
+    <%= if String.contains?(@document.content_type || "", "image") do %>
+      <div class="mt-6">
+        <h3 class="font-semibold text-gray-900 mb-3">Aperçu</h3>
+        <img 
+          src={"/#{@document.file_path}"}
+          alt={@document.filename}
+          class="max-w-full rounded-lg shadow-lg"
+        />
+      </div>
+    <% end %>
+  </div>
+</div>
+

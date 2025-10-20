@@ -1,0 +1,8 @@
+<.header>
+  Edit Appointment {@appointment.id}
+  <:subtitle>Use this form to manage appointment records in your database.</:subtitle>
+</.header>
+
+<.appointment_form changeset={@changeset} action={~p"/appointments/#{@appointment}"} />
+
+<.back navigate={~p"/appointments"}>Back to appointments</.back>

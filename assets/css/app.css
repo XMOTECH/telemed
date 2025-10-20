@@ -1,4 +1,8 @@
-@import "tailwindcss/preflight";
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
+
+/* Import utility classes (workaround for Windows path issues) */
+@import "./utilities.css";
 
 /* This file is for your main application CSS */

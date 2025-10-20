@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: telemed
+    env: elixir
+    region: frankfurt
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "mix phx.server"
+    envVars:
+      - key: MIX_ENV
+        value: prod
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: telemed-db
+          property: connectionString
+      - key: POOL_SIZE
+        value: 10
+      - key: PORT
+        value: 4000
+      - key: PHX_HOST
+        value: telemed.onrender.com
+
+databases:
+  - name: telemed-db
+    plan: free
+    databaseName: telemed_prod
+    user: telemed
+

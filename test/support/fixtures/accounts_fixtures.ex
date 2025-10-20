@@ -10,7 +10,8 @@ defmodule Telemed.AccountsFixtures do
   def valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
       email: unique_user_email(),
-      password: valid_user_password()
+      password: valid_user_password(),
+      role: "patient"  # Rôle par défaut pour les tests
     })
   end
 
@@ -24,8 +25,16 @@ defmodule Telemed.AccountsFixtures do
   end
 
   def extract_user_token(fun) do
-    {:ok, captured_email} = fun.(&"[TOKEN]#{&1}[TOKEN]")
-    [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")
-    token
+    # La fonction retourne directement le token, pas un email
+    case fun.(&"[TOKEN]#{&1}[TOKEN]") do
+      {:ok, captured_email} when is_map(captured_email) ->
+        # Ancien format avec email
+        [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")
+        token
+
+      token when is_binary(token) ->
+        # Nouveau format : token direct
+        token
+    end
   end
 end

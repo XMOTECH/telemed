@@ -1,0 +1,65 @@
+<div class="max-w-4xl mx-auto p-6">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Notifications</h1>
+    <div class="flex gap-2">
+      <.link href={~p"/notifications/mark-all-read"} method="post" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+        Marquer tout comme lu
+      </.link>
+    </div>
+  </div>
+
+  <%= if @notifications == [] do %>
+    <div class="text-center py-12">
+      <div class="text-gray-400 text-6xl mb-4">🔔</div>
+      <p class="text-gray-500 text-lg">Aucune notification</p>
+      <p class="text-sm text-gray-400 mt-2">Vous n'avez pas encore reçu de notifications</p>
+    </div>
+  <% else %>
+    <div class="space-y-4">
+      <%= for notification <- @notifications do %>
+        <div class={["border rounded-lg p-4", notification_class(notification.type), if(notification.read, do: "opacity-75", else: "border-l-4 border-l-blue-500")]}>
+          <div class="flex items-start justify-between">
+            <div class="flex items-start space-x-3 flex-1">
+              <div class="text-2xl">
+                <%= notification_icon(notification.type) %>
+              </div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900">
+                  <%= notification.title %>
+                </h3>
+                <div class="text-gray-600 mt-1">
+                  <%= if String.contains?(notification.message, "/instant/") do %>
+                    <p class="mb-3"><%= extract_message_without_link(notification.message) %></p>
+                    <%= if link = extract_link(notification.message) do %>
+                      <.link 
+                        href={link}
+                        class="inline-flex items-center bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                      >
+                        <span class="mr-2">🎥</span> REJOINDRE LA CONSULTATION
+                      </.link>
+                    <% end %>
+                  <% else %>
+                    <p><%= notification.message %></p>
+                  <% end %>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">
+                  <%= format_datetime(notification.inserted_at) %>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <%= if not notification.read do %>
+                <.link href={~p"/notifications/#{notification}/mark-read"} method="patch" class="text-blue-500 hover:text-blue-700 text-sm">
+                  Marquer comme lu
+                </.link>
+              <% end %>
+              <.link href={~p"/notifications/#{notification}"} method="delete" data-confirm="Supprimer cette notification ?" class="text-red-500 hover:text-red-700 text-sm">
+                Supprimer
+              </.link>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div> 

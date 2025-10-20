@@ -9,8 +9,8 @@ config :pbkdf2_elixir, :rounds, 1
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :telemed, Telemed.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "xmotechs",
+  password: "MonPapad123",
   hostname: "localhost",
   database: "telemed_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,

@@ -35,3 +35,31 @@ telemed-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Windows specific
+*.exe
+*.dll
+flyctl.exe
+wintun.dll
+
+# Fichiers corrompus ou temporaires dans assets
+/assets/case
+/assets/defmodule
+/assets/endpoint.call*
+/assets/false
+/assets/for
+/assets/handler_module*
+/assets/raise
+/assets/super*
+/assets/use
+
+# Backups
+*.backup
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+

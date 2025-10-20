@@ -22,6 +22,16 @@ config :telemed, TelemedWeb.Endpoint,
   pubsub_server: Telemed.PubSub,
   live_view: [signing_salt: "XGywM6xa"]
 
+# Guardian JWT Configuration
+config :telemed, Telemed.Guardian,
+  issuer: "telemed",
+  secret_key: "Z2VuZXJhdGVfYV9zZWNyZXRfa2V5X2hlcmVfZm9yX3Byb2R1Y3Rpb24=",
+  ttl: {30, :days},
+  token_ttl: %{
+    "access" => {1, :hour},
+    "refresh" => {30, :days}
+  }
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

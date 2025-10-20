@@ -3,33 +3,74 @@ defmodule TelemedWeb.UserLoginLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-200">
-      <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">Connexion</h2>
-        <.form for={@form} phx-submit="save" class="space-y-4">
-          <.input field={@form[:email]} type="email" label="Email" class="w-full" />
-          <.input field={@form[:password]} type="password" label="Mot de passe" class="w-full" />
-          <div class="flex items-center justify-between">
-            <label class="flex items-center">
-              <input type="checkbox" name="user[remember_me]" class="mr-2" />
-              <span class="text-sm">Se souvenir de moi</span>
-            </label>
-            <.link patch={~p"/users/reset_password"} class="text-sm text-blue-600 hover:underline">Mot de passe oublié ?</.link>
-          </div>
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">Se connecter</button>
-        </.form>
-        <p class="mt-6 text-center text-sm">
-          Pas encore de compte ?
-          <.link patch={~p"/users/register"} class="text-blue-600 hover:underline">Créer un compte</.link>
-        </p>
-      </div>
+    <div class="mx-auto max-w-sm">
+      <.header class="text-center">
+        Connexion à votre compte
+        <:subtitle>
+          Pas encore de compte ?
+          <.link navigate={~p"/users/register"} class="font-semibold text-brand hover:underline">
+            Inscrivez-vous
+          </.link>
+          dès maintenant.
+        </:subtitle>
+      </.header>
+
+      <form method="post" action="/users/log_in" class="space-y-4">
+        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+
+        <div>
+          <label for="user_email" class="block text-sm font-semibold leading-6 text-zinc-800">
+            Email
+          </label>
+          <input
+            type="email"
+            name="user[email]"
+            id="user_email"
+            required
+            class="mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px] text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-4 focus:ring-zinc-800/5 sm:text-sm sm:leading-6"
+          />
+        </div>
+
+        <div>
+          <label for="user_password" class="block text-sm font-semibold leading-6 text-zinc-800">
+            Mot de passe
+          </label>
+          <input
+            type="password"
+            name="user[password]"
+            id="user_password"
+            required
+            class="mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px] text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-4 focus:ring-zinc-800/5 sm:text-sm sm:leading-6"
+          />
+        </div>
+
+        <div class="mt-4">
+          <label class="flex items-center gap-2 text-sm leading-6 text-zinc-600">
+            <input type="checkbox" name="user[remember_me]" value="true" class="rounded border-zinc-300 text-zinc-900 focus:ring-0" />
+            <span>Rester connecté</span>
+          </label>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between gap-6">
+          <.link href={~p"/users/reset_password"} class="text-sm font-semibold text-brand hover:underline">
+            Mot de passe oublié ?
+          </.link>
+          <.link navigate={~p"/users/register"} class="text-sm font-semibold text-brand hover:underline">
+            Créer un compte
+          </.link>
+        </div>
+
+        <div class="mt-6">
+          <button type="submit" class="w-full rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3 text-sm font-semibold leading-6 text-white active:text-white/80">
+            Se connecter <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </form>
     </div>
     """
   end
 
   def mount(_params, _session, socket) do
-    email = Phoenix.Flash.get(socket.assigns.flash, :email)
-    form = to_form(%{"email" => email}, as: "user")
-    {:ok, assign(socket, form: form), temporary_assigns: [form: form]}
+    {:ok, socket, temporary_assigns: [form: nil]}
   end
 end

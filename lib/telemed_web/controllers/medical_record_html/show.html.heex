@@ -1,17 +1,314 @@
-<.header>
-  Medical record {@medical_record.id}
-  <:subtitle>This is a medical_record record from your database.</:subtitle>
-  <:actions>
-    <.link href={~p"/medical_records/#{@medical_record}/edit"}>
-      <.button>Edit medical_record</.button>
-    </.link>
-  </:actions>
-</.header>
+<div class="min-h-screen bg-gray-50">
+  <!-- Header DME avec patient -->
+  <.dme_header patient={%{
+    first_name: @medical_record.user.first_name,
+    last_name: @medical_record.user.last_name,
+    email: @medical_record.user.email,
+    age: @medical_record.age
+  }}>
+    <:actions>
+      <.quick_action_button action="consult" record_id={@medical_record.id} />
+      <.quick_action_button action="prescription" record_id={@medical_record.id} />
+      <.quick_action_button action="tags" record_id={@medical_record.id} />
+      
+      <.link href={~p"/medical_records/#{@medical_record.id}/documents"}>
+        <button class="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium">
+          📎 Documents
+        </button>
+      </.link>
+      
+      <.quick_action_button action="share" record_id={@medical_record.id} />
+      
+      <.link navigate={~p"/medical_records/#{@medical_record}/edit"}>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          ✏️ Modifier
+        </button>
+      </.link>
+    </:actions>
+  </.dme_header>
 
-<.list>
-  <:item title="Nom">{@medical_record.nom}</:item>
-  <:item title="Age">{@medical_record.age}</:item>
-  <:item title="Description">{@medical_record.description}</:item>
-</.list>
+  <!-- Barre de recherche (désactivée pour l'instant) -->
+  <div class="max-w-7xl mx-auto px-4">
+    <.dme_search_bar />
+  </div>
 
-<.back navigate={~p"/medical_records"}>Back to medical_records</.back>
+  <!-- Contenu principal -->
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-12 gap-6">
+      
+      <!-- Timeline (Col 1-8) -->
+      <div class="col-span-8">
+        <h2 class="text-lg font-semibold text-gray-700 mb-4">
+          📊 Dossier médical
+        </h2>
+
+        <!-- Record Item -->
+        <.timeline_item record={@medical_record} />
+
+        <!-- Actions du dossier -->
+        <div class="mt-6 flex items-center justify-between">
+          <.link navigate={~p"/medical_records"} class="text-sm text-gray-600 hover:text-gray-900">
+            ← Retour aux dossiers
+          </.link>
+
+          <div class="flex items-center space-x-3">
+            <.link 
+              navigate={~p"/medical_records/#{@medical_record}/edit"}
+              class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Modifier
+            </.link>
+
+            <.link
+              href={~p"/medical_records/#{@medical_record}"}
+              method="delete"
+              data-confirm="Êtes-vous sûr de vouloir supprimer ce dossier ?"
+              class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Supprimer
+            </.link>
+          </div>
+        </div>
+
+        <!-- Info supplémentaire si ancien format -->
+        <%= if @medical_record.content do %>
+          <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 class="font-semibold text-yellow-900 mb-2">📝 Contenu additionnel</h3>
+            <p class="text-yellow-800"><%= @medical_record.content %></p>
+          </div>
+        <% end %>
+
+        <%= if @medical_record.diagnosis do %>
+          <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="font-semibold text-blue-900 mb-2">🔬 Diagnostic (ancien format)</h3>
+            <p class="text-blue-800"><%= @medical_record.diagnosis %></p>
+          </div>
+        <% end %>
+
+        <%= if @medical_record.treatment_plan do %>
+          <div class="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 class="font-semibold text-green-900 mb-2">💊 Plan de traitement (ancien format)</h3>
+            <p class="text-green-800"><%= @medical_record.treatment_plan %></p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Sidebar (Col 9-12) -->
+      <div class="col-span-4">
+        <.dme_sidebar 
+          patient={@medical_record.user || %{}} 
+          stats={%{last_visit: @medical_record.consultation_date || @medical_record.inserted_at}}
+        />
+
+        <!-- Détails techniques (pour debug) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border p-4">
+          <h3 class="font-semibold text-gray-900 mb-3">🔧 Détails techniques</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">ID</span>
+              <span class="font-mono text-xs"><%= @medical_record.id %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Type</span>
+              <span class="font-semibold"><%= @medical_record.consultation_type || "consultation" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Priorité</span>
+              <span class="font-semibold"><%= @medical_record.priority || "normal" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Statut</span>
+              <span class="font-semibold"><%= @medical_record.status || "active" %></span>
+            </div>
+            <%= if @medical_record.follow_up_date do %>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Suivi prévu</span>
+                <span class="font-semibold"><%= Calendar.strftime(@medical_record.follow_up_date, "%d/%m/%Y") %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Guide migration SOAP -->
+        <%= if !has_soap_data?(@medical_record) do %>
+          <div class="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 class="font-semibold text-purple-900 mb-2">💡 Astuce</h3>
+            <p class="text-sm text-purple-800 mb-3">
+              Ce dossier utilise l'ancien format. Modifiez-le pour utiliser la structure SOAP moderne :
+            </p>
+            <ul class="text-sm text-purple-700 space-y-1 mb-3">
+              <li><strong>S</strong> - Symptômes rapportés</li>
+              <li><strong>O</strong> - Observations</li>
+              <li><strong>A</strong> - Assessment (diagnostic)</li>
+              <li><strong>P</strong> - Plan de traitement</li>
+            </ul>
+            <.link navigate={~p"/medical_records/#{@medical_record}/edit"}>
+              <button class="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+                ✨ Migrer vers SOAP
+              </button>
+            </.link>
+          </div>
+        <% end %>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+  
+  <!-- Modal: Consultation rapide -->
+  <.dme_modal id={"modal-quick-consult-#{@medical_record.id}"} title="⚡ Nouvelle Consultation Rapide">
+    <div class="space-y-4">
+      <p class="text-gray-600">Créer une nouvelle consultation pour <strong><%= @medical_record.nom %></strong></p>
+      
+      <form id="quick-consult-form" action={~p"/medical_records"} method="post" class="space-y-4">
+        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+        <input type="hidden" name="medical_record[user_id]" value={@medical_record.user_id} />
+        <input type="hidden" name="medical_record[nom]" value={@medical_record.nom} />
+        <input type="hidden" name="medical_record[age]" value={@medical_record.age} />
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Type de consultation</label>
+          <select name="medical_record[consultation_type]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="consultation">🩺 Consultation</option>
+            <option value="follow_up">🔄 Suivi</option>
+            <option value="exam">💉 Examen</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Motif (SOAP - Subjectif)</label>
+          <textarea name="medical_record[soap_subjective]" rows="3" placeholder="Symptômes rapportés par le patient..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+      </form>
+    </div>
+    
+    <:actions>
+      <button type="button" @click="open = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Annuler
+      </button>
+      <button type="submit" form="quick-consult-form" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        ✅ Créer
+      </button>
+    </:actions>
+  </.dme_modal>
+
+  <!-- Modal: Prescription -->
+  <.dme_modal id={"modal-prescription-#{@medical_record.id}"} title="💊 Nouvelle Prescription">
+    <div class="space-y-4">
+      <p class="text-gray-600">Prescription pour <strong><%= @medical_record.nom %></strong></p>
+      
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p class="text-sm text-yellow-800">
+          🚧 <strong>Fonctionnalité en cours de développement</strong><br/>
+          Module de prescription avec base de données médicaments à venir.
+        </p>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Plan de traitement (SOAP)</label>
+        <textarea rows="4" placeholder="Médicaments et posologie..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+      </div>
+    </div>
+    
+    <:actions>
+      <button type="button" @click="open = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Fermer
+      </button>
+    </:actions>
+  </.dme_modal>
+
+  <!-- Modal: Tags -->
+  <.dme_modal id={"modal-tags-#{@medical_record.id}"} title="🏷️ Gestion des Tags">
+    <.tag_manager tags={@medical_record.tags || []} record_id={@medical_record.id} />
+    
+    <:actions>
+      <button type="button" @click="open = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Annuler
+      </button>
+      <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        💾 Enregistrer
+      </button>
+    </:actions>
+  </.dme_modal>
+
+  <!-- Modal: Attachments -->
+  <.dme_modal id={"modal-attachments-#{@medical_record.id}"} title="📎 Gestion des Fichiers" class="max-w-3xl">
+    <.attachment_manager attachments={@medical_record.attachments || %{}} record_id={@medical_record.id} />
+    
+    <:actions>
+      <button type="button" @click="open = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Fermer
+      </button>
+      <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        📤 Uploader
+      </button>
+    </:actions>
+  </.dme_modal>
+
+  <!-- Modal: Partage -->
+  <.dme_modal id={"modal-share-#{@medical_record.id}"} title="📤 Partager le Dossier">
+    <div class="space-y-4">
+      <p class="text-gray-600">Options de partage pour <strong><%= @medical_record.nom %></strong></p>
+      
+      <div class="space-y-3">
+        <button type="button" class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">📧</span>
+            <div class="text-left">
+              <p class="font-semibold text-gray-900">Envoyer par Email</p>
+              <p class="text-sm text-gray-500">Générer et envoyer un PDF sécurisé</p>
+            </div>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        
+        <button type="button" class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">📄</span>
+            <div class="text-left">
+              <p class="font-semibold text-gray-900">Télécharger PDF</p>
+              <p class="text-sm text-gray-500">Export au format PDF pour impression</p>
+            </div>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        
+        <button type="button" class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">🔗</span>
+            <div class="text-left">
+              <p class="font-semibold text-gray-900">Lien de partage</p>
+              <p class="text-sm text-gray-500">Créer un lien sécurisé temporaire</p>
+            </div>
+          </div>
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <p class="text-xs text-gray-600">
+          🔒 Toutes les options de partage respectent la confidentialité RGPD et sont sécurisées.
+        </p>
+      </div>
+    </div>
+    
+    <:actions>
+      <button type="button" @click="open = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Fermer
+      </button>
+    </:actions>
+  </.dme_modal>
+</div>

@@ -8,6 +8,11 @@ defmodule Telemed.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
+    field :role, :string
+    field :first_name, :string
+    field :last_name, :string
+    field :phone, :string
+    field :speciality, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -37,7 +42,9 @@ defmodule Telemed.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :password, :role])
+    |> validate_required([:role])
+    |> validate_inclusion(:role, ["patient", "doctor", "admin"])
     |> validate_email(opts)
     |> validate_password(opts)
   end
@@ -154,6 +161,34 @@ defmodule Telemed.Accounts.User do
       changeset
     else
       add_error(changeset, :current_password, "is not valid")
+    end
+  end
+
+  @doc """
+  A user changeset for changing the profile (first_name, last_name, phone, speciality).
+  """
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:first_name, :last_name, :phone, :speciality])
+    |> validate_required([:first_name, :last_name])
+    |> validate_length(:first_name, min: 2, max: 50)
+    |> validate_length(:last_name, min: 2, max: 50)
+    |> validate_length(:phone, max: 20)
+    |> validate_phone_format()
+  end
+
+  defp validate_phone_format(changeset) do
+    phone = get_change(changeset, :phone)
+
+    if phone && phone != "" do
+      # Validation simplifiée du format de téléphone
+      if String.match?(phone, ~r/^[\d\s\+\-\(\)]+$/) do
+        changeset
+      else
+        add_error(changeset, :phone, "format invalide")
+      end
+    else
+      changeset
     end
   end
 end

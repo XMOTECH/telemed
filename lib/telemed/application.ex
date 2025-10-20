@@ -14,6 +14,16 @@ defmodule Telemed.Application do
       {Phoenix.PubSub, name: Telemed.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Telemed.Finch},
+
+      # ========== VIDEO INSTANT CONSULTATION ==========
+      # Registry pour tracker les rooms
+      Telemed.Video.RoomRegistry,
+      # Supervisor pour les rooms (fault-tolerant)
+      Telemed.Video.RoomSupervisor,
+      # Presence pour tracking participants temps réel
+      Telemed.Video.Presence,
+      # =================================================
+
       # Start a worker by calling: Telemed.Worker.start_link(arg)
       # {Telemed.Worker, arg},
       # Start to serve requests, typically the last entry

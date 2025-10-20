@@ -1,0 +1,11 @@
+<.simple_form :let={f} for={@changeset} action={@action}>
+  <.error :if={@changeset.action}>
+    Oops, something went wrong! Please check the errors below.
+  </.error>
+  <.input field={f[:scheduled_at]} type="datetime-local" label="Scheduled at" />
+  <.input field={f[:status]} type="text" label="Status" />
+  <.input field={f[:notes]} type="text" label="Notes" />
+  <:actions>
+    <.button>Save Appointment</.button>
+  </:actions>
+</.simple_form>

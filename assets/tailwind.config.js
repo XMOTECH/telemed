@@ -6,16 +6,119 @@ const fs = require("fs")
 const path = require("path")
 
 module.exports = {
-  content: [
-    "./js/**/*.js",
-    "../lib/telemed_web.ex",
-    "../lib/telemed_web/**/*.*ex"
+  content: {
+    files: [
+      "./js/**/*.js",
+      "../lib/**/*.{ex,exs,heex}"
+    ],
+    // Fallback: extract as much as possible
+    extract: {
+      ex: (content) => content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [],
+      exs: (content) => content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [],
+      heex: (content) => content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || []
+    }
+  },
+  // Include all utilities in dev (workaround for Windows paths with spaces)
+  safelist: [
+    { pattern: /./ }, // Include everything
   ],
   theme: {
     extend: {
       colors: {
-        brand: "#FD4F00",
-      }
+        // Brand Colors
+        brand: {
+          DEFAULT: "#FD4F00",
+          50: "#FFF5F0",
+          100: "#FFE8DC",
+          500: "#FD4F00",
+          600: "#E64500",
+          700: "#CC3D00",
+        },
+        // Primary (Medical Blue)
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
+        // Success (Medical Green)
+        success: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+        },
+        // Warning (Medical Yellow)
+        warning: {
+          50: '#fefce8',
+          100: '#fef9c3',
+          500: '#eab308',
+          600: '#ca8a04',
+          700: '#a16207',
+        },
+        // Danger (Medical Red)
+        danger: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+        },
+        // Info (Medical Purple)
+        info: {
+          50: '#faf5ff',
+          100: '#f3e8ff',
+          500: '#a855f7',
+          600: '#9333ea',
+          700: '#7e22ce',
+        },
+      },
+      spacing: {
+        'card': '1.5rem',      // 24px
+        'section': '2rem',     // 32px
+        'page': '2.5rem',      // 40px
+      },
+      borderRadius: {
+        'card': '0.75rem',     // 12px
+        'button': '0.5rem',    // 8px
+        'input': '0.5rem',     // 8px
+      },
+      boxShadow: {
+        'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        'card-hover': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        'button': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'slide-down': 'slideDown 0.3s ease-out',
+        'scale-in': 'scaleIn 0.2s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideDown: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
     },
   },
   plugins: [
